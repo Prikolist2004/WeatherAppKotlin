@@ -1,6 +1,7 @@
 package com.example.weather.Fragment
 
 import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -10,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
 import com.android.volley.Request
@@ -20,6 +22,11 @@ import com.example.weather.Adapters.WeatherModel
 import com.example.weather.MainViewModel
 import com.example.weather.R
 import com.example.weather.databinding.FragmentMainBinding
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.tasks.CancellationToken
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.material.tabs.TabLayoutMediator
 import com.squareup.picasso.Picasso
 import org.json.JSONObject
@@ -27,6 +34,7 @@ import org.json.JSONObject
 const val API_KEY = "a17e5aac8720464382955808242109"
 
 class MainFragment : Fragment() {
+    private  lateinit var fLocationClient : FusedLocationProviderClient
     private val fList = listOf(
         HoursFragment.newInstance(),
         DayFragment.newInstance()
@@ -54,16 +62,47 @@ class MainFragment : Fragment() {
         chekPermission()
         init()
         updateCurrentCard()
-        requestWeatherData("Nigger")
+        getLocation()
 
 
     }
     private fun init() = with(binding){
+        fLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
         val adapter = VpAdapter(activity as FragmentActivity, fList)
         vp.adapter = adapter
         TabLayoutMediator(tabLayout, vp){
             tab, pos -> tab.text = tList[pos]
         }.attach()
+        ibSync.setOnClickListener{
+            getLocation()
+        }
+    }
+
+    private fun getLocation()
+    {
+        val ct = CancellationTokenSource()
+        if (ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
+        fLocationClient.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, ct.token)
+            .addOnCompleteListener{
+                requestWeatherData("${it.result.latitude}, ${it.result.longitude}")
+
+            }
     }
 
     private fun  updateCurrentCard() = with(binding){
