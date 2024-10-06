@@ -8,13 +8,14 @@ import android.view.ViewGroup
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.weather.Adapters.WeatherAdapter
+import com.example.weather.Adapters.WeatherModel
 import com.example.weather.MainViewModel
 import com.example.weather.R
 import com.example.weather.databinding.FragmentDayBinding
 import com.example.weather.databinding.FragmentMainBinding
 
 
-class DayFragment : Fragment() {
+class DayFragment : Fragment(), WeatherAdapter.Listener {
     private lateinit var adapter: WeatherAdapter
     private lateinit var binding: FragmentDayBinding
     private val model: MainViewModel by activityViewModels()
@@ -36,7 +37,7 @@ class DayFragment : Fragment() {
         }
     }
     private fun init() = with(binding){
-        adapter = WeatherAdapter()
+        adapter = WeatherAdapter(this@DayFragment)
         rcView.layoutManager = LinearLayoutManager(activity)
         rcView.adapter = adapter
     }
@@ -44,5 +45,9 @@ class DayFragment : Fragment() {
     companion object {
 
         fun newInstance() = DayFragment()
+    }
+
+    override fun onClick(item: WeatherModel) {
+        model.liveDataCurrent.value = item
     }
 }
