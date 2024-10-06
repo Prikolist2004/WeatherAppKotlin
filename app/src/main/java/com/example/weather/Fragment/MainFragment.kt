@@ -1,8 +1,12 @@
 package com.example.weather.Fragment
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -19,6 +23,7 @@ import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.example.weather.Adapters.VpAdapter
 import com.example.weather.Adapters.WeatherModel
+import com.example.weather.DialogManager
 import com.example.weather.MainViewModel
 import com.example.weather.R
 import com.example.weather.databinding.FragmentMainBinding
@@ -62,10 +67,17 @@ class MainFragment : Fragment() {
         chekPermission()
         init()
         updateCurrentCard()
-        getLocation()
+
 
 
     }
+
+    override fun onResume() {
+        super.onResume()
+        checkLocation()
+    }
+
+
     private fun init() = with(binding){
         fLocationClient = LocationServices.getFusedLocationProviderClient(requireContext())
         val adapter = VpAdapter(activity as FragmentActivity, fList)
@@ -74,12 +86,35 @@ class MainFragment : Fragment() {
             tab, pos -> tab.text = tList[pos]
         }.attach()
         ibSync.setOnClickListener{
+            tabLayout.selectTab(tabLayout.getTabAt(0))
+            checkLocation()
+        }
+    }
+    private fun checkLocation(){
+        if(isLocationEnable()){
             getLocation()
         }
+        else{
+            DialogManager.localSettingDialog(requireContext(),object: DialogManager.Listener {
+                override fun onClick() {
+                    startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                }
+
+            })
+        }
+
+    }
+
+
+    private fun isLocationEnable(): Boolean{
+        val lm = activity?.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return lm.isProviderEnabled(LocationManager.GPS_PROVIDER)
     }
 
     private fun getLocation()
     {
+
+
         val ct = CancellationTokenSource()
         if (ActivityCompat.checkSelfPermission(
                 requireContext(),
